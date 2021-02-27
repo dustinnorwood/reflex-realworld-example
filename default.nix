@@ -8,7 +8,6 @@ project ./. ({ pkgs, ... }: {
   ios.bundleIdentifier = "systems.obsidian.obelisk.examples.minimal";
   ios.bundleName = "Obelisk Minimal Example";
   withHoogle = true;
-  virtualisation.docker.enable = true;
   overrides = with pkgs.haskell.lib; (self: super: {
     entropy = self.callHackage "entropy" "0.4.1.3" {};
     scrypt = dontCheck super.scrypt;
