@@ -9,3 +9,4 @@ ghcid-output.txt
 cabal.sandbox.config
 TAGS
 dist/
+deploy/
