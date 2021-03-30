@@ -17,13 +17,15 @@ import           Servant.Common.Req     (QParam (QNone))
 
 import           Common.Conduit.Api.Articles.Articles (Articles (..))
 import           Common.Conduit.Api.Namespace         (Namespace (Namespace), unNamespace)
+import           Common.Conduit.Api.Packages.Packages (Packages (..))
 import           Common.Route                         (FrontendRoute (..))
 import           Frontend.ArticlePreview              (articlesPreview)
+import           Frontend.PackagePreview              (packagesPreview)
 import qualified Frontend.Conduit.Client              as Client
 import           Frontend.FrontendStateT
 import           Frontend.Utils                       (buttonClass, buttonDynClass)
 
-data HomePageSelected = GlobalSelected | FeedSelected | TagSelected Text deriving Show
+data HomePageSelected = GlobalSelected | TagSelected Text deriving Show
 makePrisms ''HomePageSelected
 
 homePage
@@ -42,84 +44,71 @@ homePage
 homePage = elClass "div" "home-page" $ mdo
   tokDyn <- reviewFrontendState loggedInToken
   pbE <- getPostBuild
+  let newSelection = leftmost [pbE, void $ updated tokDyn]
 
-  selectedDyn <- holdDyn GlobalSelected $ leftmost
-    [ maybe GlobalSelected (const FeedSelected) <$> current tokDyn <@ pbE
-    , maybe GlobalSelected (const FeedSelected) <$> updated tokDyn
-    , NEL.head <$> newSelectedE
-    ]
+  (loadTagsE,_,_) <- Client.allTags newSelection
 
-  res <- dyn $ ffor selectedDyn $ \s -> do
-    newSelection <- getPostBuild
-    case s of
-      FeedSelected -> Client.feed
-        tokDyn
-        (constDyn QNone)
-        (constDyn QNone)
-        newSelection
-      GlobalSelected -> Client.listArticles
-        tokDyn
-        (constDyn QNone)
-        (constDyn QNone)
-        (constDyn [])
-        (constDyn [])
-        (constDyn [])
-        newSelection
-
-      TagSelected t -> Client.listArticles
-        tokDyn
-        (constDyn QNone)
-        (constDyn QNone)
-        (constDyn [t])
-        (constDyn [])
-        (constDyn [])
-        newSelection
-
-  (loadArtsE,_,artsLoadingDyn) <- Client.switchHoldThroughClientRes res
-  (loadTagsE,_,_) <- Client.allTags (leftmost [pbE,void $ updated tokDyn])
-
-  artsDyn <- holdDyn (Articles [] 0) loadArtsE
   tagsDyn <- holdDyn (Namespace []) loadTagsE
 
   elClass "div" "banner" $
     elClass "div" "container" $ do
-      elClass "h1" "logo-font" $ text "conduit"
-      el "p" $ text "A place to share your knowledge"
+      elClass "h1" "logo-font" $ text "Undetermined Name Project"
+      el "p" $ text "Your weekend is just a click away"
 
-  (_,newSelectedE) <- runEventWriterT . elClass "div" "container page" . elClass "div" "row" $ do
-    elClass "div" "col-md-9" $ do
-      elClass "div" "feed-toggle" $
-        elClass "ul" "nav nav-pills outline-active" $ do
-          feedSelectEDyn <- dyn $ ffor tokDyn $ maybe (pure never) $ \_ -> do
-            let feedClassDyn = ("nav-link" <>) . (^._FeedSelected.to (const " active")) <$> selectedDyn
-            elClass "li" "nav-item" $ buttonDynClass feedClassDyn (constDyn False) $ text "Your Feed"
-          feedSelectE''' <- switchHold never feedSelectEDyn
-          tellEvent $ (FeedSelected :| []) <$ feedSelectE'''
+  void . elClass "div" "container page" . elClass "div" "row" $ do
+    elClass "div" "col-md-12" $ do
+      el "h1" $ text "Popular"
+      (loadPkgsE,_,pkgsLoadingDyn) <- do
+        Client.listPackages
+            tokDyn
+            (constDyn QNone)
+            (constDyn QNone)
+            (constDyn ["popular"])
+            (constDyn [])
+            newSelection
+      pkgsDyn <- holdDyn (Packages [] 0) loadPkgsE
+      packagesPreview pkgsLoadingDyn pkgsDyn
 
-          let homeClassDyn = ("nav-link" <>) . (^._GlobalSelected.to (const " active")) <$> selectedDyn
-          globalSelectE''' <- elClass "li" "nav-item" $ buttonDynClass homeClassDyn (constDyn False) $ text "Global Feed"
-          void . dyn . ffor selectedDyn $ \case
-            TagSelected t -> elClass "li" "nav-item" $ buttonClass "nav-link active" (constDyn False) $ text $ "#" <> t
-            _             -> pure never
-          tellEvent $ (GlobalSelected :| []) <$ globalSelectE'''
+  void . elClass "div" "container page" . elClass "div" "row" $ do
+    elClass "div" "col-md-12" $ do
+      el "h1" $ text "Categories"
+      (loadPkgsE,_,pkgsLoadingDyn) <- do
+        Client.listPackages
+            tokDyn
+            (constDyn QNone)
+            (constDyn QNone)
+            (constDyn ["categories"])
+            (constDyn [])
+            newSelection
+      pkgsDyn <- holdDyn (Packages [] 0) loadPkgsE
+      packagesPreview pkgsLoadingDyn pkgsDyn
 
-      articlesPreview artsLoadingDyn artsDyn
+  void . elClass "div" "container page" . elClass "div" "row" $ do
+    elClass "div" "col-md-12" $ do
+      el "h1" $ text "Top Rated"
+      (loadPkgsE,_,pkgsLoadingDyn) <- do
+        Client.listPackages
+            tokDyn
+            (constDyn QNone)
+            (constDyn QNone)
+            (constDyn ["top-rated"])
+            (constDyn [])
+            newSelection
+      pkgsDyn <- holdDyn (Packages [] 0) loadPkgsE
+      packagesPreview pkgsLoadingDyn pkgsDyn
 
-    elClass "div" "col-md-3" $
-      elClass "div" "sidebar" $ do
-        el "p" $ text "Popular Tags"
-        elClass "div" "tag-list" $ do
-          void $ simpleList (unNamespace <$> tagsDyn) tagPill
+
+  void . elClass "div" "container page" . elClass "div" "row" $ do
+    elClass "div" "col-md-12" $ do
+      el "h1" $ text "We think you'll like"
+      (loadPkgsE,_,pkgsLoadingDyn) <- do
+        Client.listPackages
+            tokDyn
+            (constDyn QNone)
+            (constDyn QNone)
+            (constDyn ["we-think-you-will-like"])
+            (constDyn [])
+            newSelection
+      pkgsDyn <- holdDyn (Packages [] 0) loadPkgsE
+      packagesPreview pkgsLoadingDyn pkgsDyn
   pure ()
-
-  where
-    tagPill tDyn = do
-      let cfg = (def :: ElementConfig EventResult t (DomBuilderSpace m))
-            & elementConfig_eventSpec %~ addEventSpecFlags (Proxy :: Proxy (DomBuilderSpace m)) Click (\_ -> preventDefault)
-            & elementConfig_initialAttributes .~ ("class" =: "tag-pill tag-default" <> "href" =: "")
-      (e, _) <- element "a" cfg $ dynText tDyn
-
-      -- We'll gloss over this for now. But you can read this as:
-      -- When the button is clicked, tag the event with the current value of the tDyn text.
-      -- And then wrap it up in a Non empty list of HomeSelectedEvents (a list because EventWriter needs a semigroup)
-      tellEvent $ pure . TagSelected <$> current tDyn <@ domEvent Click e

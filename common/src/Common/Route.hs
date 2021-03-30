@@ -32,6 +32,7 @@ data FrontendRoute :: * -> * where
   FrontendRoute_Settings :: FrontendRoute ()
   FrontendRoute_Editor :: FrontendRoute (Maybe DocumentSlug)
   FrontendRoute_Article :: FrontendRoute DocumentSlug
+  FrontendRoute_Package :: FrontendRoute DocumentSlug
   FrontendRoute_Profile :: FrontendRoute (Username, Maybe (R ProfileRoute))
   -- This type is used to define frontend routes, i.e. ones for which the backend will serve the frontend.
 
@@ -52,6 +53,7 @@ backendRouteEncoder = handleEncoder (const (InL BackendRoute_Missing :/ ())) $
       FrontendRoute_Settings -> PathSegment "settings" $ unitEncoder mempty
       FrontendRoute_Editor -> PathSegment "editor" $ maybeEncoder (unitEncoder mempty) (singlePathSegmentEncoder . unwrappedEncoder)
       FrontendRoute_Article -> PathSegment "article" $ singlePathSegmentEncoder . unwrappedEncoder
+      FrontendRoute_Package -> PathSegment "package" $ singlePathSegmentEncoder . unwrappedEncoder
       FrontendRoute_Profile -> PathSegment "profile" $
         let profileRouteEncoder = pathComponentEncoder $ \case
               ProfileRoute_Favourites -> PathSegment "favourites" $ unitEncoder mempty

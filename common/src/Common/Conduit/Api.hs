@@ -3,6 +3,7 @@ module Common.Conduit.Api
   ( module Common.Conduit.Api
   , module Articles
   , module Namespace
+  , module Packages
   , module Profiles
   , module Tags
   , module User
@@ -14,6 +15,7 @@ import Servant.API ((:<|>), (:>))
 
 import Common.Conduit.Api.Articles  as Articles
 import Common.Conduit.Api.Namespace as Namespace
+import Common.Conduit.Api.Packages  as Packages
 import Common.Conduit.Api.Profiles  as Profiles
 import Common.Conduit.Api.User      as User
 import Common.Conduit.Api.Users     as Users
@@ -25,6 +27,7 @@ type TopLevelApi token
      =    ("users"     :> UsersApi token)
      :<|> ("user"      :> UserApi token)
      :<|> ("articles"  :> ArticlesApi token)
+     :<|> ("packages"  :> PackagesApi token)
      :<|> ("profiles"  :> ProfilesApi token)
      :<|> ("tags"      :> TagsApi token)
 

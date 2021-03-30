@@ -28,6 +28,7 @@ import           Frontend.HomePage               (homePage)
 import           Frontend.LocalStorageKey        (LocalStorageTag (..))
 import           Frontend.Login                  (login)
 import           Frontend.Nav                    (nav)
+import           Frontend.Package                (package)
 import           Frontend.Profile                (profile)
 import           Frontend.Register               (register)
 import           Frontend.Settings               (settings)
@@ -58,7 +59,7 @@ htmlBody = mapRoutedT unravelAppState $ do
     tellEvent $ (pure . LogIn . unNamespace) <$> currentUserE
     tellEvent $ (pure LogOut) <$ currentUserErrE
   nav
-  subRoute_ pages
+  elAttr "main" ("role"=:"main"<>"class"=:"container") $ subRoute_ pages
   footer
   where
     unravelAppState :: AppState t m () -> m ()
@@ -88,6 +89,7 @@ htmlBody = mapRoutedT unravelAppState $ do
       FrontendRoute_Login    -> login
       FrontendRoute_Register -> register
       FrontendRoute_Article  -> article
+      FrontendRoute_Package  -> package
       FrontendRoute_Settings -> settings
       FrontendRoute_Profile  -> pathSegmentSubRoute profile
       FrontendRoute_Editor   -> editor
@@ -100,12 +102,10 @@ footer
      , MonadSample t m
      )
   => m ()
-footer = el "footer" $ elClass "div" "container" $ do
-  routeLinkClass "logo-font" (FrontendRoute_Home :/ ()) $ text "conduit"
+footer = elClass "footer" "footer" $ elClass "div" "container" $ do
+  routeLinkClass "logo-font" (FrontendRoute_Home :/ ()) $ text "fojano"
   elClass "span" "attribution" $ do
-    text "An interactive learning project from "
-    elAttr "a" ("href" =: "https://thinkster.io") $ text "Thinkster"
-    text ". Code & designed licensed under MIT."
+    text "The trillion dollar business opportunity."
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend (prerender_ htmlHead htmlHead) htmlBody

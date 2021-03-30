@@ -33,6 +33,7 @@ import qualified Backend.Conduit.Database                  as Database
 import qualified Backend.Conduit.Database.Articles         as DBArticles
 import qualified Backend.Conduit.Database.Articles.Article as DBArticle
 import qualified Backend.Conduit.Database.Comments         as DBComments
+import qualified Backend.Conduit.Database.Packages         as DBPackages
 import qualified Backend.Conduit.Database.Tags             as DBTags
 import qualified Backend.Conduit.Database.Users            as DBUsers
 import qualified Backend.Conduit.Database.Users.User       as DBUser
@@ -40,6 +41,7 @@ import           Backend.Conduit.Errors
 import           Common.Conduit.Api                        as Api
 import qualified Common.Conduit.Api.Articles.Article       as ApiArticle
 import qualified Common.Conduit.Api.Articles.Articles      as ApiArticles
+import qualified Common.Conduit.Api.Packages.Packages      as ApiPackages
 import qualified Common.Conduit.Api.Articles.Comment       as ApiComment
 import qualified Common.Conduit.Api.Articles.CreateComment as ApiCreateComment
 import qualified Common.Conduit.Api.Profiles.Profile       as ApiProfile
@@ -67,7 +69,7 @@ mkEnv dbConnStr jwk = do
   pure $ ConduitServerEnv p (defaultJWTSettings jwk)
 
 server :: Server (Api Claim) ConduitServerContext ConduitServerM
-server = usersServer :<|> userServer :<|> articlesServer :<|> profileServer :<|> tagsServer
+server = usersServer :<|> userServer :<|> articlesServer :<|> packagesServer :<|> profileServer :<|> tagsServer
 
 usersServer :: Server (UsersApi Claim) ConduitServerContext ConduitServerM
 usersServer = loginServer :<|> registerServer
@@ -167,6 +169,46 @@ articlesServer = listArticlesServer :<|> createArticleServer :<|> feedServer :<|
               throwError forbidden
             liftQuery $ DBComments.destroy cId
             pure NoContent
+
+packagesServer :: Server (PackagesApi Claim) ConduitServerContext ConduitServerM
+packagesServer = listPackagesServer :<|> createPackageServer :<|> feedServer :<|> packageServer
+  where
+    listPackagesServer authRes limit offset tags favorited = runConduitErrorsT $ do
+      runDatabase $ do
+        currUserMay <- optionallyLoadAuthorizedUser authRes
+        ApiPackages.fromList <$>
+          (DBPackages.all
+           (primaryKey <$> currUserMay)
+           (fromMaybe 20 limit)
+           (fromMaybe 0 offset)
+           (Set.fromList tags)
+           (Set.fromList favorited))
+
+    feedServer authRes limit offset = runConduitErrorsT $ do
+      runDatabase $ do
+        currUser <- loadAuthorizedUser authRes
+        ApiPackages.fromList <$>
+          (DBPackages.feed
+           (primaryKey currUser)
+           (fromMaybe 20 limit)
+           (fromMaybe 0 offset))
+
+    createPackageServer authRes (Namespace attrCreate) = runConduitErrorsT $ do
+      runDatabase $ do
+        currUser   <- loadAuthorizedUser authRes
+        validAttrs <- withExceptT failedValidation $ DBPackages.validateAttributesForInsert attrCreate
+        liftQuery $ Namespace <$> DBPackages.create (primaryKey currUser) validAttrs
+
+    packageServer authRes slug = getPackageServer
+      where
+        getPackageServer = runConduitErrorsT $ do
+          package <- runDatabase loadPackage
+          pure $ Namespace package
+
+        loadPackage = do
+          currUserMay <- optionallyLoadAuthorizedUser authRes
+          packageMay  <- liftQuery $ DBPackages.find (primaryKey <$> currUserMay) slug
+          packageMay ?? notFound ("Package(" <> slug <> ")")
 
 profileServer :: Server (ProfilesApi Claim) ConduitServerContext ConduitServerM
 profileServer = profileGetServer

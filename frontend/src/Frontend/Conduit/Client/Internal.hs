@@ -24,6 +24,9 @@ import Common.Conduit.Api.Articles.Attributes    (CreateArticle)
 import Common.Conduit.Api.Articles.Comment       (Comment)
 import Common.Conduit.Api.Articles.CreateComment (CreateComment)
 import Common.Conduit.Api.Namespace              (Namespace)
+import Common.Conduit.Api.Packages.Package       (Package)
+import Common.Conduit.Api.Packages.Packages      (Packages)
+import Common.Conduit.Api.Packages.Attributes    (CreatePackage)
 import Common.Conduit.Api.Profiles               (Profile)
 import Common.Conduit.Api.User.Account           (Account, Token, getToken)
 import Common.Conduit.Api.User.Update            (UpdateUser)
@@ -101,6 +104,37 @@ data ArticlesClient f t m = ArticlesClient
   }
 makeLenses ''ArticlesClient
 
+data PackageClient f t m = PackageClient
+  { _packageGet
+    :: Event t ()
+    -> m (Event t (f (ReqResult () (Namespace "package" Package))))
+  }
+makeLenses ''PackageClient
+
+data PackagesClient f t m = PackagesClient
+  { _packagesList
+    :: Dynamic t (f (Maybe Token))
+    -> Dynamic t (f (QParam Integer))
+    -> Dynamic t (f (QParam Integer))
+    -> Dynamic t (f [Text])
+    -> Dynamic t (f [Text])
+    -> Event t ()
+    -> m (Event t (f (ReqResult () Packages)))
+  , _packagesCreate
+    :: Dynamic t (f (Maybe Token))
+    -> Dynamic t (f (Either Text (Namespace "package" CreatePackage)))
+    -> Event t ()
+    -> m (Event t (f (ReqResult () (Namespace "package" Package))))
+  , _packagesFeed
+    :: Dynamic t (f (Maybe Token))
+    -> Dynamic t (f (QParam Integer))
+    -> Dynamic t (f (QParam Integer))
+    -> Event t ()
+    -> m (Event t (f (ReqResult () Packages)))
+  , _packagesPackage :: Dynamic t (f (Maybe Token)) -> f (Dynamic t (Either Text Text)) -> PackageClient f t m
+  }
+makeLenses ''PackagesClient
+
 data ProfilesClient f t m = ProfilesClient
   { _profileGet
     :: Dynamic t (f (Maybe Token))
@@ -121,6 +155,7 @@ data ApiClient f t m = ApiClient
   { _apiUsers    :: UsersClient f t m
   , _apiUser     :: UserClient f t m
   , _apiArticles :: ArticlesClient f t m
+  , _apiPackages :: PackagesClient f t m
   , _apiProfiles :: ProfilesClient f t m
   , _apiTags     :: TagsClient f t m
   }
@@ -136,7 +171,7 @@ getClient = mkClient (pure $ BasePath "/") -- This would be much better if there
       where
         c :: ClientMulti t m (Api Token) f ()
         c = clientA (Proxy :: Proxy (Api Token))  (Proxy :: Proxy m) (Proxy :: Proxy f) (Proxy :: Proxy ()) bp
-        apiUsersC :<|> apiUserC :<|> apiArticlesC :<|> apiProfilesC :<|> apiTagsC = c
+        apiUsersC :<|> apiUserC :<|> apiArticlesC :<|> apiPackagesC :<|> apiProfilesC :<|> apiTagsC = c
         _apiUsers = UsersClient { .. }
           where
             _usersLogin :<|> _usersRegister = apiUsersC
@@ -149,6 +184,12 @@ getClient = mkClient (pure $ BasePath "/") -- This would be much better if there
             _articlesArticle auth slug = ArticleClient { .. }
               where
                 _articleGet  :<|> _articleComments :<|> _articleCommentCreate :<|> _articleCommentDelete = articleC auth slug
+        _apiPackages = PackagesClient { .. }
+          where
+            _packagesList :<|> _packagesCreate :<|> _packagesFeed :<|> packageC = apiPackagesC
+            _packagesPackage auth slug = PackageClient { .. }
+              where
+                _packageGet = packageC auth slug
         _apiProfiles = ProfilesClient { .. }
           where
             _profileGet = apiProfilesC

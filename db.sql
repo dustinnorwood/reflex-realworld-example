@@ -445,3 +445,55 @@ ALTER TABLE ONLY public.follows
 -- PostgreSQL database dump complete
 --
 
+
+insert into public.tags (name) values ('Food Adventures'), ('Art Appreciators'), ('Thrill Seekers');
+CREATE TABLE public.package_tags (
+    package__id integer,
+    tag__name text
+);
+ALTER TABLE public.package_tags OWNER TO conduit;
+CREATE TABLE public.packages (
+    id integer NOT NULL,
+    image text NOT NULL,
+    body text NOT NULL,
+    slug text NOT NULL,
+    title text NOT NULL,
+    description text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL
+);
+ALTER TABLE public.packages OWNER TO conduit;
+CREATE SEQUENCE public.packages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ALTER TABLE public.packages_id_seq OWNER TO conduit;
+ALTER SEQUENCE public.packages_id_seq OWNED BY public.packages.id;
+CREATE TABLE public.wishlists (
+    user__id integer,
+    package__id integer
+);
+ALTER TABLE public.wishlists OWNER TO conduit;
+ALTER TABLE ONLY public.packages ALTER COLUMN id SET DEFAULT nextval('public.packages_id_seq'::regclass);
+insert into public.package_tags (package__id, tag__name) values (3, 'Food Adventures'), (4, 'Art Appreciators'), (5, 'Thrill Seekers');
+insert into public.tags (name) values ('popular'), ('categories'), ('top-rated'),('we-think-you-will-like');
+insert into public.packages (id, image, body, slug, title, description, created_at, updated_at) values
+(3,'/static/packages/burger_pursuit.png','# Things that you will need\n\n- Cake\n- Party Cannon','burger-pursuit','Burger Pursuit','Ketchup to these patties in this all-out arms race to the best burger bars in Dallas','2021-03-27 23:48:45.982494+00','2021-03-27 23:48:45.982494+00'),
+(4,'/static/packages/dinos_and_drinks.png','TODO','dinos-and-drinks','Dinos and Drinks','Bruh... muhfuckin Dinos!','2021-03-27 23:51:44.856755+00','2021-03-27 23:51:44.856755+00'),
+(5,'/static/packages/animals_of_dallas.png','TODO','animals-of-dallas','Animals of Dallas','Do you live under a rock? Come hang with some of your own kind that literally do.','2021-03-27 23:51:44.856755+00','2021-03-27 23:51:44.856755+00'),
+(6,'/static/packages/beef_hunt.png','TODO','beef-hunt','Beef Hunt','Your voices have been herd: all aboard the stock train to Tenderville! (all well-done requests will be met with a condescending guffaw and a lifetime ban from these bovine-centric establishments)','2021-03-27 23:51:44.856755+00','2021-03-27 23:51:44.856755+00'),
+(7,'/static/packages/tacos_and_talks.png','TODO','tacos-and-talks','Tacos and Talks','No, this isn''t your drunk cousin cooking velveeta and rotel while blathering about their workplace drama. Come listen to certified TEDx speakers blather about _their_ workplace drama while indulging in one of the few things Texas does right.','2021-03-27 23:51:44.856755+00','2021-03-27 23:51:44.856755+00'),
+(8,'/static/packages/zoo_stuff.png','TODO','zoo-stuff','Zoo Stuff','We couldn''t come up with a better name for this one?','2021-03-27 23:51:44.856755+00','2021-03-27 23:51:44.856755+00'),
+(9,'/static/packages/girls_girls_girls.png','TODO','girls-girls-girls','Girls Girls Girls','There''s nothing religious about this Easter Egg! Come party with the best bunnies Dallas has to offer, if that''s what you''re into.','2021-03-27 23:51:44.856755+00','2021-03-27 23:51:44.856755+00'),
+(10,'/static/packages/water_world.png','TODO','water-world','Water World','Basically our Girls Girls Girls package for the whole family.','2021-03-27 23:51:44.856755+00','2021-03-27 23:51:44.856755+00'),
+(11,'/static/packages/tipsy_times.png','TODO','tipsy-times','Tipsy Time','The best night out north of 6th Street! Don''t waste this opportunity to get hammered with your coworkers or by yourself at these bars, where the drinks are cheaper than the people drinking them.','2021-03-27 23:51:44.856755+00','2021-03-27 23:51:44.856755+00');
+SELECT pg_catalog.setval('public.packages_id_seq', 4, true);
+ALTER TABLE ONLY public.package_tags ADD CONSTRAINT package_tags_package__id_tag__name_key UNIQUE (package__id, tag__name);
+ALTER TABLE ONLY public.packages ADD CONSTRAINT packages_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.packages ADD CONSTRAINT packages_slug_key UNIQUE (slug);
+ALTER TABLE ONLY public.package_tags ADD CONSTRAINT package_tags_package__id_fkey FOREIGN KEY (package__id) REFERENCES public.packages(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.package_tags ADD CONSTRAINT package_tags_tag__name_fkey FOREIGN KEY (tag__name) REFERENCES public.tags(name) ON DELETE CASCADE;
+ALTER TABLE ONLY public.wishlists ADD CONSTRAINT wishlists_package__id_fkey FOREIGN KEY (package__id) REFERENCES public.packages(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.wishlists ADD CONSTRAINT wishlists_user__id_fkey FOREIGN KEY (user__id) REFERENCES public.users(id) ON DELETE CASCADE;

@@ -23,6 +23,9 @@ import           Common.Conduit.Api.Articles.Comment       (Comment)
 import           Common.Conduit.Api.Articles.CreateComment (CreateComment)
 import           Common.Conduit.Api.Errors                 (ErrorBody)
 import           Common.Conduit.Api.Namespace              (Namespace)
+import           Common.Conduit.Api.Packages.Package       (Package)
+import           Common.Conduit.Api.Packages.Packages      (Packages)
+import           Common.Conduit.Api.Packages.Attributes    (CreatePackage)
 import           Common.Conduit.Api.Profiles               (Profile)
 import           Common.Conduit.Api.User.Account           (Account, Token)
 import           Common.Conduit.Api.User.Update            (UpdateUser)
@@ -210,6 +213,65 @@ allTags
 allTags submitE = fmap switchClientRes $ prerender (pure emptyClientRes) $ do
   resE <- unIdF $ getClient ^. apiTags . tagsAll . fill submitE
   wireClientRes submitE resE
+
+listPackages
+  :: (Reflex t, Applicative m, Prerender js t m)
+  => Dynamic t (Maybe Token)
+  -> Dynamic t (QParam Integer)
+  -> Dynamic t (QParam Integer)
+  -> Dynamic t [Text]
+  -> Dynamic t [Text]
+  -> Event t ()
+  -> m (ClientRes t Packages)
+listPackages tokenDyn limitDyn offsetDyn tagsDyn favoritedsDyn submitE =
+  fmap switchClientRes $ prerender (pure emptyClientRes) $ do
+    resE <- unIdF $ getClient ^. apiPackages . packagesList
+      . fillIdF tokenDyn
+      . fillIdF limitDyn
+      . fillIdF offsetDyn
+      . fillIdF tagsDyn
+      . fillIdF favoritedsDyn
+      . fill submitE
+    wireClientRes submitE resE
+
+packageFeed
+  :: (Reflex t, Applicative m, Prerender js t m)
+  => Dynamic t (Maybe Token)
+  -> Dynamic t (QParam Integer)
+  -> Dynamic t (QParam Integer)
+  -> Event t ()
+  -> m (ClientRes t Packages)
+packageFeed tokenDyn limitDyn offsetDyn submitE =
+  fmap switchClientRes $ prerender (pure emptyClientRes) $ do
+    resE <- unIdF $ getClient ^. apiPackages . packagesFeed
+      . fillIdF tokenDyn
+      . fillIdF limitDyn
+      . fillIdF offsetDyn
+      . fill submitE
+    wireClientRes submitE resE
+
+getPackage
+  :: (Reflex t, Applicative m, Prerender js t m)
+  => Dynamic t (Maybe Token)
+  -> Dynamic t (Either Text Text)
+  -> Event t ()
+  -> m (ClientRes t (Namespace "package" Package))
+getPackage tokenDyn slugDyn submitE = fmap switchClientRes $ prerender (pure emptyClientRes) $ do
+  resE <- unIdF $ getClient ^. apiPackages . packagesPackage . fillIdF tokenDyn . fillId slugDyn . packageGet . fill submitE
+  wireClientRes submitE resE
+
+createPackage
+  :: (Reflex t, Applicative m, Prerender js t m)
+  => Dynamic t (Maybe Token)
+  -> Dynamic t (Either Text (Namespace "package" CreatePackage))
+  -> Event t ()
+  -> m (ClientRes t (Namespace "package" Package))
+createPackage tokenDyn createDyn submitE = fmap switchClientRes $ prerender (pure emptyClientRes) $ do
+  resE <- unIdF $ getClient ^. apiPackages . packagesCreate . fillIdF tokenDyn . fillIdF createDyn . fill submitE
+  wireClientRes submitE resE
+
+-- TODO Update Package
+-- TODO Delete Package
 
 -- Helpers ---------------------------------------------------------------------------------------------------
 

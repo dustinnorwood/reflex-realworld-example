@@ -28,6 +28,10 @@ import           Backend.Conduit.Database.Articles.Article    (ArticleT)
 import qualified Backend.Conduit.Database.Articles.Article    as Article
 import           Backend.Conduit.Database.Articles.ArticleTag (ArticleTagT)
 import           Backend.Conduit.Database.Articles.Favorite   (FavoriteT)
+import           Backend.Conduit.Database.Packages.Package    (PackageT)
+import qualified Backend.Conduit.Database.Packages.Package    as Package
+import           Backend.Conduit.Database.Packages.PackageTag (PackageTagT)
+import           Backend.Conduit.Database.Packages.Wishlist   (WishlistT)
 import           Backend.Conduit.Database.Comments.Comment    (CommentT)
 import qualified Backend.Conduit.Database.Comments.Comment    as Comment
 import           Backend.Conduit.Database.Tags.Tag            (TagT)
@@ -40,6 +44,9 @@ data ConduitDb f = ConduitDb
   , conduitArticles    :: f (TableEntity ArticleT)
   , conduitComments    :: f (TableEntity CommentT)
   , conduitFavorites   :: f (TableEntity FavoriteT)
+  , conduitPackageTags :: f (TableEntity PackageTagT)
+  , conduitPackages    :: f (TableEntity PackageT)
+  , conduitWishlists   :: f (TableEntity WishlistT)
   , conduitFollows     :: f (TableEntity FollowT)
   , conduitTags        :: f (TableEntity TagT)
   , conduitUsers       :: f (TableEntity UserT)
@@ -61,6 +68,12 @@ conduitDb =
         tableModification
           { Article.createdAt = fieldNamed "created_at"
           , Article.updatedAt = fieldNamed "updated_at"
+          }
+    , conduitPackages =
+        modifyTable id $
+        tableModification
+          { Package.createdAt = fieldNamed "created_at"
+          , Package.updatedAt = fieldNamed "updated_at"
           }
     , conduitComments =
         modifyTable id $

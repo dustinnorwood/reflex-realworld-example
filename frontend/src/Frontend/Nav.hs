@@ -28,10 +28,19 @@ nav
 nav = do
   rDyn <- askRoute
   loggedIn <- reviewFrontendState loggedInAccount
-  elClass "nav" "navbar navbar-light" $
-    elClass "div" "container" $ do
-      routeLinkDynClass "navbar-brand" (constDyn $ FrontendRoute_Home :/ ()) $ text "conduit"
-      elClass "ul" "nav navbar-nav pull-xs-right" $ do
+  el "header" . elClass "nav" "navbar navbar-expand-md navbar-light fixed-top bg-light" $ do
+    routeLinkDynClass "navbar-brand" (constDyn $ FrontendRoute_Home :/ ()) $ text "fojano"
+    elAttr "button" ("class"=:"navbar-toggler"
+                    <> "type"=:"button"
+                    <> "data-toggle"=:"collapse"
+                    <> "data-target"=:"#navbarCollapse"
+                    <> "aria-controls"=:"navbarCollapse"
+                    <> "aria-expanded"=:"false"
+                    <> "aria-label"=:"Toggle navigation"
+                    ) $
+        elClass "span" "navbar-toggler-icon" blank
+    elAttr "div" ("class" =: "collapse navbar-collapse" <> "id"=:"navbarCollapse") $ do
+      elClass "ul" "navbar-nav mr-auto" $ do
         navItem (FrontendRoute_Home :/ ()) rDyn $ text "Home"
         void $ widgetHold
           loggedOutMenu
