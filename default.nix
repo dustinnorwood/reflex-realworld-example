@@ -24,6 +24,7 @@ project ./. ({ pkgs, ... }: {
     megaparsec = pkgs.haskell.lib.dontCheck ((import ./dep/megaparsec) self super);
     modern-uri = pkgs.haskell.lib.dontCheck ((import ./dep/modern-uri) self super);
     neat-interpolation = pkgs.haskell.lib.dontCheck ((import ./dep/neat-interpolation) self super);
+    brittany = pkgs.haskell.lib.dontCheck super.brittany;
     email-validate = pkgs.haskell.lib.dontCheck super.email-validate;
     validation = doJailbreak super.validation; # newer hedgehog in nixpkgs.
     servant = pkgs.haskell.lib.dontCheck super.servant;
